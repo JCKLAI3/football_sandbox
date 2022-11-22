@@ -13,9 +13,7 @@ def clean_football_data(football_data_df, season_name):
     Returns:
         cleaned_football_data_df (pandas.DataFrame): cleaned dataframe of football results
     """
-    football_data_df.columns = [
-        col_name.lower() for col_name in football_data_df.columns
-    ]
+    football_data_df.columns = [col_name.lower() for col_name in football_data_df.columns]
 
     cleaned_football_data_df = (
         football_data_df.rename(
@@ -24,9 +22,7 @@ def clean_football_data(football_data_df, season_name):
             }
         )
         .assign(
-            kickoff=pd.to_datetime(
-                football_data_df.date + " " + football_data_df.time
-            ),
+            kickoff=pd.to_datetime(football_data_df.date + " " + football_data_df.time),
             season_name=season_name,
         )
         .astype(
