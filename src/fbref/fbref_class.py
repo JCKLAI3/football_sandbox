@@ -5,6 +5,16 @@ import pandas as pd
 import requests
 from bs4 import BeautifulSoup
 
+from src.fbref.etl.clean import (
+    clean_defense_table,
+    clean_fixtures_df,
+    clean_home_away_league_table,
+    clean_league_table_df,
+    clean_player_defense_table,
+    clean_player_standard_table,
+    clean_possession_table,
+)
+
 competition_dict = {
     "9": "Premier-League",
     "12": "La-Liga",
@@ -49,7 +59,6 @@ class FBref:
         else:
             over_headers = over_headers.find_all("th")
             no_over_headers = len(over_headers)
-            no_over_headers = 0
 
         table_headers = headers.find_all("th", scope="col")
         table_headers_text = [header.text for header in table_headers]
@@ -193,7 +202,8 @@ class FBref:
             fixtures_rows_list.append(row_data)
 
         fixtures_df = pd.DataFrame(data=fixtures_rows_list, columns=fixtures_headers)
-        return fixtures_df
+        cleaned_fixtures_df = clean_fixtures_df(fixtures_df)
+        return cleaned_fixtures_df
 
     def get_fixture_stats(self, fixture_url, team_id, stat_type):
         """Function used to grab stats for a specified team. ie"""
@@ -275,15 +285,30 @@ class FBref:
         if table_type == "league_table":
             season_table = season_stats_html.find(id=f"results{season_name}{competition_id}1_overall")
             season_df = self.get_fbref_df(season_table)
+            cleaned_season_df = clean_league_table_df(season_df)
         elif table_type == "home_away_league_table":
             season_table = season_stats_html.find(id=f"results{season_name}{competition_id}1_home_away")
             season_df = self.get_fbref_df(season_table)
+            cleaned_season_df = clean_home_away_league_table(season_df)
+        elif table_type == "defense_table":
+            season_table = season_stats_html.find(id="stats_squads_defense_for")
+            season_df = self.get_fbref_df(season_table)
+            cleaned_season_df = clean_defense_table(season_df)
+        elif table_type == "possession_table":
+            season_table = season_stats_html.find(id="stats_squads_possession_for")
+            season_df = self.get_fbref_df(season_table)
+            cleaned_season_df = season_df
+            cleaned_season_df = clean_possession_table(season_df)
+
         else:
             raise Exception("Input table_type invalid.")
 
-        return season_df
+        cleaned_season_df["competition_id"] = competition_id
+        cleaned_season_df["season_name"] = season_name.replace("-", "_")
 
-    def get_big5_player_stats(self, table_type, competition_id, season_name):
+        return cleaned_season_df
+
+    def get_big5_player_stats(self, table_type, season_name):
         """Function used to grab player data from the big 5 leagues"""
 
         if table_type == "standard":
@@ -293,13 +318,24 @@ class FBref:
             )
             big5_table_html = self.get_html_table("stats_standard", big5_url)
             big5_df = self.get_fbref_df(big5_table_html, expected_attribute_no=0)
+            big5_df = clean_player_standard_table(big5_df)
         elif table_type == "passing":
             big5_url = (
-                f"https://fbref.com/en/comps/Big5/{season_name}/passing/players/"
+                f"https://fbref.com/en/comps/Big5/{season_name}/{table_type}/players/"
                 + f"{season_name}-Big-5-European-Leagues-Stats"
             )
             big5_table_html = self.get_html_table("stats_passing", big5_url)
             big5_df = self.get_fbref_df(big5_table_html, expected_attribute_no=0)
+        elif table_type == "defense":
+            big5_url = (
+                f"https://fbref.com/en/comps/Big5/{season_name}/{table_type}/players/"
+                + f"{season_name}-Big-5-European-Leagues-Stats"
+            )
+            big5_table_html = self.get_html_table("stats_defense", big5_url)
+            big5_df = self.get_fbref_df(big5_table_html, expected_attribute_no=0)
+            big5_df = clean_player_defense_table(big5_df)
+
         else:
             raise Exception("Input table_type invalid.")
+        big5_df["season_name"] = season_name
         return big5_df
