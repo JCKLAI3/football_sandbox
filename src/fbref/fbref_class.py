@@ -11,6 +11,7 @@ from src.fbref.etl.clean import (
     clean_home_away_league_table,
     clean_league_table_df,
     clean_player_defense_table,
+    clean_player_possession_table,
     clean_player_standard_table,
     clean_possession_table,
 )
@@ -203,6 +204,8 @@ class FBref:
 
         fixtures_df = pd.DataFrame(data=fixtures_rows_list, columns=fixtures_headers)
         cleaned_fixtures_df = clean_fixtures_df(fixtures_df)
+        cleaned_fixtures_df["season_name"] = season_name.replace("-", "_")
+        cleaned_fixtures_df["competition_id"] = competition_id
         return cleaned_fixtures_df
 
     def get_fixture_stats(self, fixture_url, team_id, stat_type):
@@ -334,7 +337,14 @@ class FBref:
             big5_table_html = self.get_html_table("stats_defense", big5_url)
             big5_df = self.get_fbref_df(big5_table_html, expected_attribute_no=0)
             big5_df = clean_player_defense_table(big5_df)
-
+        elif table_type == "possession":
+            big5_url = (
+                f"https://fbref.com/en/comps/Big5/{season_name}/{table_type}/players/"
+                + f"{season_name}-Big-5-European-Leagues-Stats"
+            )
+            big5_table_html = self.get_html_table("stats_possession", big5_url)
+            big5_df = self.get_fbref_df(big5_table_html, expected_attribute_no=0)
+            big5_df = clean_player_possession_table(big5_df)
         else:
             raise Exception("Input table_type invalid.")
         big5_df["season_name"] = season_name

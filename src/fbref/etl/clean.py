@@ -211,6 +211,7 @@ def clean_player_standard_table(player_standard_table_df):
         midfielder=player_standard_table_df.Pos.str.contains("MF"),
         attacker=player_standard_table_df.Pos.str.contains("FW"),
         Comp=player_standard_table_df["Comp"].apply(lambda x: x.split(maxsplit=1)[1]),
+        Age=player_standard_table_df["Age"].apply(lambda x: x.split("-")[0] if isinstance(x, str) else np.nan),
     )
     # clean columns
     player_standard_table_df["Playing Time Min"] = player_standard_table_df["Playing Time Min"].apply(
@@ -232,6 +233,7 @@ def clean_player_standard_table(player_standard_table_df):
         "Performance CrdR",
     ]
     float_columns = [
+        "Age",
         "Born",
         "Playing Time 90s",
         "Per 90 Minutes Gls",
@@ -343,8 +345,91 @@ def clean_defense_table(defense_df, per_match_columns=True):
     return defense_df
 
 
-def clean_player_defense_table(player_table_df, per_match_columns_only=True):
+def clean_player_defense_table(player_table_df, per_match_columns=True):
     """Function used to clean player_defense_table_df data from fbref"""
+    # replace blanks with NaN
+    player_table_df = player_table_df.replace("", np.nan)
+
+    # rename columns
+    player_table_df.rename(columns=PLAYER_DEFENSE_RENAME_COL_DICT, inplace=True)
+
+    # add columns
+    player_table_df = player_table_df.assign(
+        country=player_table_df.country.apply(lambda x: x.split(" ")[1]),
+        goalkeeper=player_table_df.position.str.contains("GK"),
+        defender=player_table_df.position.str.contains("DF"),
+        midfielder=player_table_df.position.str.contains("MF"),
+        attacker=player_table_df.position.str.contains("FW"),
+        competition=player_table_df.competition.apply(lambda x: x.split(maxsplit=1)[1]),
+    )
+
+    # change column types
+    integer_columns = []
+    float_columns = [
+        "no_of_nineties",
+        "tackles_success_rate_percentage",
+        "Rk",
+        "born",
+        "tackles",
+        "total_tackles_won",
+        "tackles_def_3rd",
+        "tackles_mid_3rd",
+        "tackles_att_3rd",
+        "successful_tackles_on_dribblers",
+        "attempted_tackles_on_dribblers",
+        "unsuccessful_tackles_on_dribblers",
+        "blocks",
+        "shots_blocked",
+        "passes_blocked",
+        "interceptions",
+        "tackles_plus_interceptions",
+        "clearances",
+        "errors",
+    ]
+    category_columns = ["country", "team"]
+
+    player_table_df = clean_fb_ref_column_dtypes(player_table_df, integer_columns, float_columns, category_columns)
+
+    # columns with total counts
+    total_count_columns = [
+        "tackles",
+        "total_tackles_won",
+        "tackles_def_3rd",
+        "tackles_mid_3rd",
+        "tackles_att_3rd",
+        "successful_tackles_on_dribblers",
+        "attempted_tackles_on_dribblers",
+        "unsuccessful_tackles_on_dribblers",
+        "blocks",
+        "shots_blocked",
+        "passes_blocked",
+        "interceptions",
+        "tackles_plus_interceptions",
+        "clearances",
+        "errors",
+    ]
+
+    # add additional columns
+    for column in total_count_columns:
+        player_table_df[f"{column}_per_match"] = player_table_df.apply(
+            lambda x: round(x[column] / x["no_of_nineties"], 2) if x["no_of_nineties"] != 0 else np.nan, axis=1
+        )
+
+    # per match
+    per_match_columns = [column for column in player_table_df.columns if "per_match" in column]
+
+    if per_match_columns:
+        player_table_df.drop(total_count_columns, axis=1)
+
+    # round up dataframe
+    for float_column in float_columns:
+        player_table_df[float_column] = player_table_df[float_column].apply(lambda x: round(x, 2))
+
+    return player_table_df
+
+
+def clean_player_possession_table(player_table_df, per_match_columns=True):
+    """Function used to clean player_possession_table_df data from fbref"""
     # replace blanks with NaN
     player_table_df = player_table_df.replace("", np.nan)
 
