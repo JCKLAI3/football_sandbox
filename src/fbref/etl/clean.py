@@ -205,7 +205,7 @@ def clean_player_standard_table(player_standard_table_df):
 
     # add columns
     player_standard_table_df = player_standard_table_df.assign(
-        Nation=player_standard_table_df["Nation"].apply(lambda x: x.split(" ")[1]),
+        Nation=player_standard_table_df["Nation"].apply(lambda x: x.split(" ")[1] if isinstance(x, str) else x),
         goalkeeper=player_standard_table_df.Pos.str.contains("GK"),
         defender=player_standard_table_df.Pos.str.contains("DF"),
         midfielder=player_standard_table_df.Pos.str.contains("MF"),
