@@ -10,9 +10,7 @@ from src.fbref.etl.clean import (
     clean_fixtures_df,
     clean_home_away_league_table,
     clean_league_table_df,
-    clean_player_defense_table,
-    clean_player_possession_table,
-    clean_player_standard_table,
+    clean_player_stat_table,
     clean_possession_table,
 )
 
@@ -321,7 +319,7 @@ class FBref:
             )
             big5_table_html = self.get_html_table("stats_standard", big5_url)
             big5_df = self.get_fbref_df(big5_table_html, expected_attribute_no=0)
-            big5_df = clean_player_standard_table(big5_df)
+            big5_df = clean_player_stat_table(big5_df, table_type)
         elif table_type == "passing":
             big5_url = (
                 f"https://fbref.com/en/comps/Big5/{season_name}/{table_type}/players/"
@@ -329,6 +327,7 @@ class FBref:
             )
             big5_table_html = self.get_html_table("stats_passing", big5_url)
             big5_df = self.get_fbref_df(big5_table_html, expected_attribute_no=0)
+            big5_df = clean_player_stat_table(big5_df, table_type)
         elif table_type == "defense":
             big5_url = (
                 f"https://fbref.com/en/comps/Big5/{season_name}/{table_type}/players/"
@@ -336,7 +335,7 @@ class FBref:
             )
             big5_table_html = self.get_html_table("stats_defense", big5_url)
             big5_df = self.get_fbref_df(big5_table_html, expected_attribute_no=0)
-            big5_df = clean_player_defense_table(big5_df)
+            big5_df = clean_player_stat_table(big5_df, table_type)
         elif table_type == "possession":
             big5_url = (
                 f"https://fbref.com/en/comps/Big5/{season_name}/{table_type}/players/"
@@ -344,7 +343,23 @@ class FBref:
             )
             big5_table_html = self.get_html_table("stats_possession", big5_url)
             big5_df = self.get_fbref_df(big5_table_html, expected_attribute_no=0)
-            big5_df = clean_player_possession_table(big5_df)
+            big5_df = clean_player_stat_table(big5_df, table_type)
+        elif table_type == "shooting":
+            big5_url = (
+                f"https://fbref.com/en/comps/Big5/{season_name}/{table_type}/players/"
+                + f"{season_name}-Big-5-European-Leagues-Stats"
+            )
+            big5_table_html = self.get_html_table("stats_shooting", big5_url)
+            big5_df = self.get_fbref_df(big5_table_html, expected_attribute_no=0)
+            big5_df = clean_player_stat_table(big5_df, table_type)
+        elif table_type == "miscellaneous":
+            big5_url = (
+                f"https://fbref.com/en/comps/Big5/{season_name}/misc/players/"
+                + f"{season_name}-Big-5-European-Leagues-Stats"
+            )
+            big5_table_html = self.get_html_table("stats_misc", big5_url)
+            big5_df = self.get_fbref_df(big5_table_html, expected_attribute_no=0)
+            big5_df = clean_player_stat_table(big5_df, table_type)
         else:
             raise Exception("Input table_type invalid.")
         big5_df["season_name"] = season_name
