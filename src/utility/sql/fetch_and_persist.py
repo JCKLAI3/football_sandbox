@@ -1,6 +1,6 @@
 """Script used to fetch and persist to db."""
 
-import pandas as p
+import pandas as pd
 import sqlalchemy as db
 from sqlalchemy.sql import text
 
@@ -23,6 +23,5 @@ def query_db(query_text, engine):
 
 def persist_to_db(df_to_persist, table_name, schema_name, engine):
     """Function used to persist data to db"""
-    with engine.connect().execution_options(autocommit=True) as conn:
-        df_to_persist.to_sql(table_name, con=engine, schema=schema_name, if_exists="append", index=False)
+    df_to_persist.to_sql(table_name, con=engine, schema=schema_name, if_exists="append", index=False)
     print("Data Persisted")
