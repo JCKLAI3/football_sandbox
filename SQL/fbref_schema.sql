@@ -12,8 +12,8 @@ DROP TABLE IF EXISTS fbref.seasons;
 
 -- Seasons table
 CREATE TABLE IF NOT EXISTS fbref.seasons (
-    season_id SMALLINT NOT NULL,
-    season_name VARCHAR(9),
+    season_id SERIAL NOT NULL,
+    season_name VARCHAR(9) UNIQUE,
     PRIMARY KEY(season_id)
 );
 
@@ -25,7 +25,7 @@ CREATE INDEX idx_seasons_season_name ON fbref.seasons(season_name);
 -- Country table
 CREATE TABLE IF NOT EXISTS fbref.country (
     country_id SERIAL NOT NULL,
-    country_code VARCHAR(3),
+    country_code VARCHAR(3) UNIQUE,
     PRIMARY KEY(country_id)
 );
 
@@ -34,7 +34,7 @@ CREATE INDEX idx_country_country_code ON fbref.country(country_code);
 
 -- Teams table
 CREATE TABLE IF NOT EXISTS fbref.teams (
-    team_id SMALLINT NOT NULL,
+    team_id SERIAL NOT NULL,
     gender VARCHAR(1),
     team_name VARCHAR(70),
     team_fb_ref_id VARCHAR(10) UNIQUE NOT NULL,
@@ -48,7 +48,7 @@ CREATE INDEX idx_team_team_name ON fbref.teams(team_name);
 
 -- Competitions table
 CREATE TABLE IF NOT EXISTS fbref.competitions (
-    competition_id SMALLINT NOT NULL,
+    competition_id SERIAL NOT NULL,
     country_id SMALLINT,
     gender VARCHAR(1),
     competition_name VARCHAR(70),

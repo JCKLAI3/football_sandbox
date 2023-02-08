@@ -142,6 +142,55 @@ class FBref:
         """Function used to return a dictionary for competition id to competition name"""
         return competition_dict
 
+    def get_teams_per_country(self, country):
+        """Function used to output football clubs per country"""
+        team_country_dict = {
+            'England': 'https://fbref.com/en/country/clubs/ENG/England-Football-teams',
+            'France': 'https://fbref.com/en/country/clubs/FRA/France-Football-teams',
+            'Germany': 'https://fbref.com/en/country/clubs/GER/Germany-Football-teams',
+            'Italy': 'https://fbref.com/en/country/clubs/ITA/Italy-Football-teams',
+            'Spain': 'https://fbref.com/en/country/clubs/ESP/Spain-Football-teams',
+        }
+
+        team_country_link = team_country_dict[country]
+
+        team_html_table = self.get_html_table('clubs', team_country_link)
+        team_headers = self.get_column_names(team_html_table)
+        team_headers += ["team_link", "team_id"]
+
+        team_body = team_html_table.find("tbody")
+        team_rows = team_body.find_all("tr")
+
+        team_rows = self.get_rid_of_dividers(data_rows_list=team_rows, expected_attribute_no=0)
+
+        team_rows_list = []
+
+        for team_row in team_rows:
+
+            # main data
+            row_data = [data_cell.text for data_cell in team_row]
+
+            # additional columns of interest
+            try:
+                team_link = team_row.find('a')["href"] # note here team link doesn't have specific tag to search
+                if 'squads' in team_link:
+                    full_team_link = "https://fbref.com" + team_link
+                    team_id = full_team_link.split("/")[5]
+                else:
+                    team_link = np.nan
+                    team_id = np.nan
+            except TypeError:
+                team_link = np.nan
+                team_id = np.nan
+
+            row_data += [full_team_link]
+            row_data += [team_id]
+            team_rows_list.append(row_data)
+            
+        team_df = pd.DataFrame(data=team_rows_list, columns=team_headers)
+        
+        return team_df
+
     def get_competition_seasons(self, competition_link):
         """"""
         competition_seasons_html = self.get_html_table("seasons", competition_link)
