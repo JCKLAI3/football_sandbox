@@ -176,8 +176,8 @@ def clean_fixtures_df(fixtures_df):
         "Referee",
         "Match Report",
         "Notes",
-        "home_id",
-        "away_id",
+        "home_team_id",
+        "away_team_id",
         "fixture_link",
     ]
 

@@ -145,16 +145,16 @@ class FBref:
     def get_teams_per_country(self, country):
         """Function used to output football clubs per country"""
         team_country_dict = {
-            'England': 'https://fbref.com/en/country/clubs/ENG/England-Football-teams',
-            'France': 'https://fbref.com/en/country/clubs/FRA/France-Football-teams',
-            'Germany': 'https://fbref.com/en/country/clubs/GER/Germany-Football-teams',
-            'Italy': 'https://fbref.com/en/country/clubs/ITA/Italy-Football-teams',
-            'Spain': 'https://fbref.com/en/country/clubs/ESP/Spain-Football-teams',
+            "England": "https://fbref.com/en/country/clubs/ENG/England-Football-teams",
+            "France": "https://fbref.com/en/country/clubs/FRA/France-Football-teams",
+            "Germany": "https://fbref.com/en/country/clubs/GER/Germany-Football-teams",
+            "Italy": "https://fbref.com/en/country/clubs/ITA/Italy-Football-teams",
+            "Spain": "https://fbref.com/en/country/clubs/ESP/Spain-Football-teams",
         }
 
         team_country_link = team_country_dict[country]
 
-        team_html_table = self.get_html_table('clubs', team_country_link)
+        team_html_table = self.get_html_table("clubs", team_country_link)
         team_headers = self.get_column_names(team_html_table)
         team_headers += ["team_link", "team_id"]
 
@@ -172,8 +172,8 @@ class FBref:
 
             # additional columns of interest
             try:
-                team_link = team_row.find('a')["href"] # note here team link doesn't have specific tag to search
-                if 'squads' in team_link:
+                team_link = team_row.find("a")["href"]  # note here team link doesn't have specific tag to search
+                if "squads" in team_link:
                     full_team_link = "https://fbref.com" + team_link
                     team_id = full_team_link.split("/")[5]
                 else:
@@ -186,9 +186,9 @@ class FBref:
             row_data += [full_team_link]
             row_data += [team_id]
             team_rows_list.append(row_data)
-            
+
         team_df = pd.DataFrame(data=team_rows_list, columns=team_headers)
-        
+
         return team_df
 
     def get_competition_seasons(self, competition_link):
@@ -217,7 +217,7 @@ class FBref:
 
         fixtures_html_table = fixtures_html.find(id=f"sched_{season_name}_{competition_id}_1")
         fixtures_headers = self.get_column_names(fixtures_html_table)
-        fixtures_headers += ["home_id", "away_id", "fixture_link"]
+        fixtures_headers += ["home_team_id", "away_team_id", "fixture_link"]
 
         fixtures_body = fixtures_html_table.find("tbody")
 
