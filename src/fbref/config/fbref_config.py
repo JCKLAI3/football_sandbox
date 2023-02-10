@@ -1,3 +1,5 @@
+CURRENT_SEASON = "2022-2023"
+
 LEAGUE_TABLE_RENAME_COL_DICT = {
     "rk": "position",
     "squad": "team",
