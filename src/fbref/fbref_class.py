@@ -177,10 +177,10 @@ class FBref:
                     full_team_link = "https://fbref.com" + team_link
                     team_id = full_team_link.split("/")[5]
                 else:
-                    team_link = np.nan
+                    full_team_link = np.nan
                     team_id = np.nan
             except TypeError:
-                team_link = np.nan
+                full_team_link = np.nan
                 team_id = np.nan
 
             row_data += [full_team_link]
@@ -291,6 +291,7 @@ class FBref:
         """Function used to grab dataframe for stats from a given fixture url"""
         fixture_stat_html = self.get_html_table(table_id, fixture_url)
         fixture_stat_headers = self.get_column_names(fixture_stat_html)
+        fixture_stat_headers += ["player_id", "player_link"]
 
         fixture_stat_body = fixture_stat_html.find("tbody")
 
@@ -300,6 +301,21 @@ class FBref:
         for fixture_stat_row in fixture_stat_rows:
             # main data
             row_data = [data_cell.text for data_cell in fixture_stat_row]
+
+            # get player ids
+            try:
+                player_link = fixture_stat_row.find("a")["href"]
+                if "players" in player_link:
+                    full_player_link = "https://fbref.com" + player_link
+                    player_id = player_link.split("/")[3]
+                else:
+                    full_player_link = np.nan
+                    player_id = np.nan
+            except TypeError:
+                full_player_link = np.nan
+                player_id = np.nan
+
+            row_data += [player_id, full_player_link]
             fixture_stat_rows_list.append(row_data)
 
         fixture_stat_df = pd.DataFrame(data=fixture_stat_rows_list, columns=fixture_stat_headers)

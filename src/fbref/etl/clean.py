@@ -39,6 +39,7 @@ def clean_fb_ref_column_names(fbref_df):
     # replace spaces and punctuation
     fbref_df.columns = [
         col_name.replace(" ", "_")
+        .replace("Take-Ons", "take_ons")
         .replace("/", "_per_")
         .replace("+/-", "_plus_mins_")
         .replace("+", "_plus_")
@@ -413,3 +414,45 @@ def clean_player_stat_table(player_table_df, stat_type, per_match_columns=True):
     player_table_df[numerical_cols] = player_table_df[numerical_cols].replace(np.nan, 0)
 
     return player_table_df
+
+
+def clean_full_match_stat_df(full_match_stat_df):
+    """Function used to clean full_match_stat_df
+    Args:
+        full_match_stat_df (pandas.DataFrame): merged dataframe of match stats
+    """
+    # rename columns
+    full_match_stat_df = clean_fb_ref_column_names(full_match_stat_df)
+
+    full_match_stat_df = full_match_stat_df.assign(
+        age=full_match_stat_df.age.apply(lambda x: x.split("-")[0] if isinstance(x, str) else np.nan),
+        country=full_match_stat_df.nation.apply(lambda x: x.split(" ")[1] if isinstance(x, str) else x),
+    )
+
+    category_column_list = ["player", "nation", "country", "pos", "player_id", "player_link"]
+    numeric_columns = [column for column in full_match_stat_df.columns if column not in category_column_list]
+
+    # float for all numeric columns
+    full_match_stat_df = full_match_stat_df.replace("", 0)
+
+    full_match_stat_df = clean_fb_ref_column_dtypes(
+        full_match_stat_df, integer_columns=[], float_columns=numeric_columns, category_columns=category_column_list
+    )
+
+    # round up dataframe
+    for numeric_column in numeric_columns:
+        full_match_stat_df[numeric_column] = full_match_stat_df[numeric_column].apply(lambda x: round(x, 2))
+
+    # rename columns
+    full_match_stat_df.rename(
+        columns={
+            "player": "player_name",
+            "no": "shirt_no",
+            "pos": "position",
+        },
+        inplace=True,
+    )
+
+    # drop
+    full_match_stat_df.drop(columns=["nation"], axis=1, inplace=True)
+    return full_match_stat_df
