@@ -108,7 +108,23 @@ CREATE INDEX idx_fixtures_competition_seasons_id  ON fbref.fixtures(competition_
 CREATE INDEX idx_fixtures_competition_home_team_id  ON fbref.fixtures(home_team_id);
 CREATE INDEX idx_fixtures_competition_away_team_id ON fbref.fixtures(away_team_id);
 
+-- Players table
+CREATE TABLE IF NOT EXISTS fbref.players (
+    player_id VARCHAR(8) NOT NULL,
+    year_of_birth SMALLINT,
+    position VARCHAR(8),
+    player_name VARCHAR(70),
+    player_link VARCHAR,
+    country_id SMALLINT,
+    PRIMARY KEY(player_id),
+    CONSTRAINT fk_players_country_id_country
+        FOREIGN KEY(country_id) 
+            REFERENCES fbref.country(country_id)
+);
 
+CREATE INDEX idx_players_position  ON fbref.players(position);
+CREATE INDEX idx_players_player_name  ON fbref.players(player_name);
+CREATE INDEX idx_players_country_id  ON fbref.players(country_id);
 
 -- convention = {
 --   "ix": "ix_%(column_0_label)s",

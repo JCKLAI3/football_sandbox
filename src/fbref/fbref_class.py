@@ -6,6 +6,7 @@ import requests
 from bs4 import BeautifulSoup
 
 from src.fbref.etl.clean import (
+    clean_big5_player_info,
     clean_defense_table,
     clean_fixtures_df,
     clean_home_away_league_table,
@@ -429,3 +430,44 @@ class FBref:
             raise Exception("Input table_type invalid.")
         big5_df["season_name"] = season_name
         return big5_df
+
+    def get_big5_player_info(self, season_name):
+        """Function used to grab player specific information from fbref"""
+        big5_url = (
+            f"https://fbref.com/en/comps/Big5/{season_name}/stats/players/"
+            + f"{season_name}-Big-5-European-Leagues-Stats"
+        )
+        big5_table_html = self.get_html_table("stats_standard", big5_url)
+        big5_table_headers = self.get_column_names(big5_table_html)
+        big5_table_headers += ["player_id", "player_link"]
+
+        big5_table_body = big5_table_html.find("tbody")
+        big5_table_rows = big5_table_body.find_all("tr")
+        big5_table_rows = self.get_rid_of_dividers(big5_table_rows, expected_attribute_no=0)
+
+        big5_table_rows_list = []
+
+        for big5_table_row in big5_table_rows:
+            # main data
+            row_data = [data_cell.text for data_cell in big5_table_row]
+
+            # get player ids
+            try:
+                player_link = big5_table_row.find("a")["href"]
+                if "players" in player_link:
+                    full_player_link = "https://fbref.com" + player_link
+                    player_id = player_link.split("/")[3]
+                else:
+                    full_player_link = np.nan
+                    player_id = np.nan
+            except TypeError:
+                full_player_link = np.nan
+                player_id = np.nan
+
+            row_data += [player_id, full_player_link]
+            big5_table_rows_list.append(row_data)
+
+        big5_player_info = pd.DataFrame(data=big5_table_rows_list, columns=big5_table_headers)
+        big5_player_info = clean_big5_player_info(big5_player_info)
+
+        return big5_player_info

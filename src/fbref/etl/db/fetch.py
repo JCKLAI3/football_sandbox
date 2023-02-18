@@ -3,6 +3,10 @@
 from src.utility.sql.fetch_and_persist import query_db
 
 
+def fetch_countries():
+    return query_db("SELECT * FROM fbref.country")
+
+
 def fetch_seasons():
     return query_db("SELECT * FROM fbref.seasons")
 
@@ -35,3 +39,7 @@ def fetch_fixtures(competition_season_id=None):
     else:
         fixture_query = f"SELECT * FROM fbref.fixtures WHERE competition_seasons_id = {competition_season_id}"
     return query_db(fixture_query)
+
+
+def fetch_players():
+    return query_db("SELECT * FROM fbref.players")

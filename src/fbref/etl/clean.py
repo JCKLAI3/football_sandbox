@@ -25,6 +25,7 @@ from src.fbref.config.fbref_config import (
     TEAM_DEFENSE_RENAME_COL_DICT,
     TEAM_POSSESSION_RENAME_COL_DICT,
 )
+from src.fbref.etl.db.fetch import fetch_countries
 
 
 def clean_fb_ref_column_names(fbref_df):
@@ -445,14 +446,36 @@ def clean_full_match_stat_df(full_match_stat_df):
 
     # rename columns
     full_match_stat_df.rename(
-        columns={
-            "player": "player_name",
-            "no": "shirt_no",
-            "pos": "position",
-        },
+        columns={"player": "player_name", "no": "shirt_no", "pos": "position", "int": "interceptions"},
         inplace=True,
     )
 
     # drop
     full_match_stat_df.drop(columns=["nation"], axis=1, inplace=True)
     return full_match_stat_df
+
+
+def clean_big5_player_info(big5_player_info_df):
+    """Function used to clean big5 player info df"""
+    # fetch countries df
+    country_df = fetch_countries()
+
+    # replace blanks
+    cleaned_player_df = big5_player_info_df.replace("", np.nan)
+    cleaned_player_df = cleaned_player_df.drop_duplicates(subset=["player_id"])
+
+    # clean player data
+    cleaned_player_df = (
+        cleaned_player_df.assign(
+            country=cleaned_player_df.Nation.apply(lambda x: x.split(" ")[1] if isinstance(x, str) else x),
+        )
+        .merge(country_df, left_on="country", right_on="country_code")
+        .rename(
+            columns={
+                "Player": "player_name",
+                "Born": "year_of_birth",
+                "Pos": "position",
+            }
+        )
+    )[["player_id", "year_of_birth", "position", "player_name", "player_link", "country_id"]]
+    return cleaned_player_df

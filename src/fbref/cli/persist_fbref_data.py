@@ -6,7 +6,11 @@ from tqdm import tqdm
 
 from src.fbref.config.fbref_config import CURRENT_SEASON
 from src.fbref.etl.db.clean import clean_competition_seasons_df, clean_fixtures_df
-from src.fbref.etl.db.fetch import fetch_competition_seasons, fetch_fixtures
+from src.fbref.etl.db.fetch import (
+    fetch_competition_seasons,
+    fetch_fixtures,
+    fetch_players,
+)
 from src.fbref.fbref_class import FBref
 from src.utility.sql.fetch_and_persist import persist_to_db
 
@@ -88,12 +92,21 @@ def main(
 
     fixtures_df = pd.concat(fixtures_df_list)
 
+    # players data
+    big5_players_df = pd.concat([fb.get_big5_player_info(season_name) for season_name in season_name_list])
+    players_in_db = fetch_players()
+    player_to_persist = big5_players_df[~big5_players_df.player_id.isin(players_in_db.player_id)]
+
+    # persist
+
     persist_dict = {
         "competition_seasons": competition_seasons_df,
         "fixtures": fixtures_df,
+        "players": player_to_persist,
     }
 
     for table_name, df_to_persist in persist_dict.items():
+
         persist_to_db(
             df_to_persist=df_to_persist,
             table_name=table_name,
