@@ -6,6 +6,7 @@ import requests
 from bs4 import BeautifulSoup
 
 from src.fbref.etl.clean import (
+    clean_big5_player_info,
     clean_defense_table,
     clean_fixtures_df,
     clean_home_away_league_table,
@@ -142,6 +143,55 @@ class FBref:
         """Function used to return a dictionary for competition id to competition name"""
         return competition_dict
 
+    def get_teams_per_country(self, country):
+        """Function used to output football clubs per country"""
+        team_country_dict = {
+            "England": "https://fbref.com/en/country/clubs/ENG/England-Football-teams",
+            "France": "https://fbref.com/en/country/clubs/FRA/France-Football-teams",
+            "Germany": "https://fbref.com/en/country/clubs/GER/Germany-Football-teams",
+            "Italy": "https://fbref.com/en/country/clubs/ITA/Italy-Football-teams",
+            "Spain": "https://fbref.com/en/country/clubs/ESP/Spain-Football-teams",
+        }
+
+        team_country_link = team_country_dict[country]
+
+        team_html_table = self.get_html_table("clubs", team_country_link)
+        team_headers = self.get_column_names(team_html_table)
+        team_headers += ["team_link", "team_id"]
+
+        team_body = team_html_table.find("tbody")
+        team_rows = team_body.find_all("tr")
+
+        team_rows = self.get_rid_of_dividers(data_rows_list=team_rows, expected_attribute_no=0)
+
+        team_rows_list = []
+
+        for team_row in team_rows:
+
+            # main data
+            row_data = [data_cell.text for data_cell in team_row]
+
+            # additional columns of interest
+            try:
+                team_link = team_row.find("a")["href"]  # note here team link doesn't have specific tag to search
+                if "squads" in team_link:
+                    full_team_link = "https://fbref.com" + team_link
+                    team_id = full_team_link.split("/")[5]
+                else:
+                    full_team_link = np.nan
+                    team_id = np.nan
+            except TypeError:
+                full_team_link = np.nan
+                team_id = np.nan
+
+            row_data += [full_team_link]
+            row_data += [team_id]
+            team_rows_list.append(row_data)
+
+        team_df = pd.DataFrame(data=team_rows_list, columns=team_headers)
+
+        return team_df
+
     def get_competition_seasons(self, competition_link):
         """"""
         competition_seasons_html = self.get_html_table("seasons", competition_link)
@@ -168,7 +218,7 @@ class FBref:
 
         fixtures_html_table = fixtures_html.find(id=f"sched_{season_name}_{competition_id}_1")
         fixtures_headers = self.get_column_names(fixtures_html_table)
-        fixtures_headers += ["home_id", "away_id", "fixture_link"]
+        fixtures_headers += ["home_team_id", "away_team_id", "fixture_link"]
 
         fixtures_body = fixtures_html_table.find("tbody")
 
@@ -242,6 +292,7 @@ class FBref:
         """Function used to grab dataframe for stats from a given fixture url"""
         fixture_stat_html = self.get_html_table(table_id, fixture_url)
         fixture_stat_headers = self.get_column_names(fixture_stat_html)
+        fixture_stat_headers += ["player_id", "player_link"]
 
         fixture_stat_body = fixture_stat_html.find("tbody")
 
@@ -251,6 +302,21 @@ class FBref:
         for fixture_stat_row in fixture_stat_rows:
             # main data
             row_data = [data_cell.text for data_cell in fixture_stat_row]
+
+            # get player ids
+            try:
+                player_link = fixture_stat_row.find("a")["href"]
+                if "players" in player_link:
+                    full_player_link = "https://fbref.com" + player_link
+                    player_id = player_link.split("/")[3]
+                else:
+                    full_player_link = np.nan
+                    player_id = np.nan
+            except TypeError:
+                full_player_link = np.nan
+                player_id = np.nan
+
+            row_data += [player_id, full_player_link]
             fixture_stat_rows_list.append(row_data)
 
         fixture_stat_df = pd.DataFrame(data=fixture_stat_rows_list, columns=fixture_stat_headers)
@@ -364,3 +430,44 @@ class FBref:
             raise Exception("Input table_type invalid.")
         big5_df["season_name"] = season_name
         return big5_df
+
+    def get_big5_player_info(self, season_name):
+        """Function used to grab player specific information from fbref"""
+        big5_url = (
+            f"https://fbref.com/en/comps/Big5/{season_name}/stats/players/"
+            + f"{season_name}-Big-5-European-Leagues-Stats"
+        )
+        big5_table_html = self.get_html_table("stats_standard", big5_url)
+        big5_table_headers = self.get_column_names(big5_table_html)
+        big5_table_headers += ["player_id", "player_link"]
+
+        big5_table_body = big5_table_html.find("tbody")
+        big5_table_rows = big5_table_body.find_all("tr")
+        big5_table_rows = self.get_rid_of_dividers(big5_table_rows, expected_attribute_no=0)
+
+        big5_table_rows_list = []
+
+        for big5_table_row in big5_table_rows:
+            # main data
+            row_data = [data_cell.text for data_cell in big5_table_row]
+
+            # get player ids
+            try:
+                player_link = big5_table_row.find("a")["href"]
+                if "players" in player_link:
+                    full_player_link = "https://fbref.com" + player_link
+                    player_id = player_link.split("/")[3]
+                else:
+                    full_player_link = np.nan
+                    player_id = np.nan
+            except TypeError:
+                full_player_link = np.nan
+                player_id = np.nan
+
+            row_data += [player_id, full_player_link]
+            big5_table_rows_list.append(row_data)
+
+        big5_player_info = pd.DataFrame(data=big5_table_rows_list, columns=big5_table_headers)
+        big5_player_info = clean_big5_player_info(big5_player_info)
+
+        return big5_player_info

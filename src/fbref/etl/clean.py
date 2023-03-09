@@ -25,6 +25,7 @@ from src.fbref.config.fbref_config import (
     TEAM_DEFENSE_RENAME_COL_DICT,
     TEAM_POSSESSION_RENAME_COL_DICT,
 )
+from src.fbref.etl.db.fetch import fetch_countries
 
 
 def clean_fb_ref_column_names(fbref_df):
@@ -39,6 +40,7 @@ def clean_fb_ref_column_names(fbref_df):
     # replace spaces and punctuation
     fbref_df.columns = [
         col_name.replace(" ", "_")
+        .replace("Take-Ons", "take_ons")
         .replace("/", "_per_")
         .replace("+/-", "_plus_mins_")
         .replace("+", "_plus_")
@@ -176,8 +178,8 @@ def clean_fixtures_df(fixtures_df):
         "Referee",
         "Match Report",
         "Notes",
-        "home_id",
-        "away_id",
+        "home_team_id",
+        "away_team_id",
         "fixture_link",
     ]
 
@@ -413,3 +415,73 @@ def clean_player_stat_table(player_table_df, stat_type, per_match_columns=True):
     player_table_df[numerical_cols] = player_table_df[numerical_cols].replace(np.nan, 0)
 
     return player_table_df
+
+
+def clean_full_match_stat_df(full_match_stat_df):
+    """Function used to clean full_match_stat_df
+    Args:
+        full_match_stat_df (pandas.DataFrame): merged dataframe of match stats
+    """
+    # rename columns
+    full_match_stat_df = clean_fb_ref_column_names(full_match_stat_df)
+
+    full_match_stat_df = full_match_stat_df.assign(
+        age=full_match_stat_df.age.apply(lambda x: x.split("-")[0] if isinstance(x, str) else np.nan),
+        country=full_match_stat_df.nation.apply(lambda x: x.split(" ")[1] if isinstance(x, str) else x),
+    )
+
+    category_column_list = ["player", "nation", "country", "pos", "player_id", "player_link"]
+    numeric_columns = [column for column in full_match_stat_df.columns if column not in category_column_list]
+
+    # float for all numeric columns
+    full_match_stat_df = full_match_stat_df.replace("", 0)
+
+    full_match_stat_df = clean_fb_ref_column_dtypes(
+        full_match_stat_df, integer_columns=[], float_columns=numeric_columns, category_columns=category_column_list
+    )
+
+    # round up dataframe
+    for numeric_column in numeric_columns:
+        full_match_stat_df[numeric_column] = full_match_stat_df[numeric_column].apply(lambda x: round(x, 2))
+
+    # rename columns
+    full_match_stat_df.rename(
+        columns={
+            "player": "player_name",
+            "no": "shirt_no",
+            "pos": "position",
+            "int": "interceptions",
+            "1_per_3": "one_per_three",
+        },
+        inplace=True,
+    )
+
+    # drop
+    full_match_stat_df.drop(columns=["nation"], axis=1, inplace=True)
+    return full_match_stat_df
+
+
+def clean_big5_player_info(big5_player_info_df):
+    """Function used to clean big5 player info df"""
+    # fetch countries df
+    country_df = fetch_countries()
+
+    # replace blanks
+    cleaned_player_df = big5_player_info_df.replace("", np.nan)
+    cleaned_player_df = cleaned_player_df.drop_duplicates(subset=["player_id"])
+
+    # clean player data
+    cleaned_player_df = (
+        cleaned_player_df.assign(
+            country=cleaned_player_df.Nation.apply(lambda x: x.split(" ")[1] if isinstance(x, str) else x),
+        )
+        .merge(country_df, left_on="country", right_on="country_code")
+        .rename(
+            columns={
+                "Player": "player_name",
+                "Born": "year_of_birth",
+                "Pos": "position",
+            }
+        )
+    )[["player_id", "year_of_birth", "position", "player_name", "player_link", "country_id"]]
+    return cleaned_player_df
