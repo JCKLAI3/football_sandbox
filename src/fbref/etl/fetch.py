@@ -39,5 +39,8 @@ def get_full_match_stats(home_team_id, away_team_id, fixture_link):
             .merge(match_stats_dict["misc"])
         )
 
+        full_match_stat_df["team_id"] = team_id
+        full_match_stat_df["fixture_id"] = fixture_link.split("/")[5]
+
         team_match_stats_dict[team_id] = full_match_stat_df
     return team_match_stats_dict

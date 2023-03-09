@@ -446,7 +446,13 @@ def clean_full_match_stat_df(full_match_stat_df):
 
     # rename columns
     full_match_stat_df.rename(
-        columns={"player": "player_name", "no": "shirt_no", "pos": "position", "int": "interceptions"},
+        columns={
+            "player": "player_name",
+            "no": "shirt_no",
+            "pos": "position",
+            "int": "interceptions",
+            "1_per_3": "one_per_three",
+        },
         inplace=True,
     )
 
