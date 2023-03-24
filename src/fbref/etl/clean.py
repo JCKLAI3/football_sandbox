@@ -308,15 +308,15 @@ def clean_possession_table(possession_df, per_match_columns=True):
         "live_ball_touches",
         "successful_dribbles",
         "attempted_dribbles",
-        "no_miscontrol",
-        "no_dispossessed",
-        "passes_recieved",
+        "miscontrolled",
+        "dispossessed",
+        # "passes_received",
     ]
 
     # change column types
     integer_columns = ["no_players_used"] + total_count_columns
 
-    float_columns = ["possession", "no_of_nineties", "dribbles_success_rate"]
+    float_columns = ["possession", "no_of_nineties"]
     category_columns = ["team"]
 
     stats_df = clean_fb_ref_column_dtypes(stats_df, integer_columns, float_columns, category_columns)
