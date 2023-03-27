@@ -79,10 +79,11 @@ class FBref:
             full_header_names = table_headers_text
         return full_header_names
 
-    def get_html_table(self, table_id, input_url):
+    def get_html_table(self, table_id, input_url, beautifulsoup_object=None):
         """Function used to grab html code for specified table"""
         # grab html of data
-        beautifulsoup_object = self.instantiate_beautiful_soup_object(input_url)
+        if beautifulsoup_object is None:
+            beautifulsoup_object = self.instantiate_beautiful_soup_object(input_url)
         html_table = beautifulsoup_object.find(id=table_id)
         return html_table
 
@@ -256,41 +257,40 @@ class FBref:
         cleaned_fixtures_df["competition_id"] = competition_id
         return cleaned_fixtures_df
 
-    def get_fixture_stats(self, fixture_url, team_id, stat_type):
+    def get_fixture_stats(self, fixture_url, home_id, away_id):
         """Function used to grab stats for a specified team. ie"""
 
-        if stat_type == "summary":
-            table_id = f"stats_{team_id}_summary"
-            fixture_stat_df = self.get_fixture_stat_df(table_id, fixture_url)
-        elif stat_type == "passing":
-            table_id = f"stats_{team_id}_passing"
-            fixture_stat_df = self.get_fixture_stat_df(table_id, fixture_url)
-        elif stat_type == "passing_types":
-            table_id = f"stats_{team_id}_passing_types"
-            fixture_stat_df = self.get_fixture_stat_df(table_id, fixture_url)
-        elif stat_type == "defense":
-            table_id = f"stats_{team_id}_defense"
-            fixture_stat_df = self.get_fixture_stat_df(table_id, fixture_url)
-        elif stat_type == "possession":
-            table_id = f"stats_{team_id}_possession"
-            fixture_stat_df = self.get_fixture_stat_df(table_id, fixture_url)
-        elif stat_type == "misc":
-            table_id = f"stats_{team_id}_misc"
-            fixture_stat_df = self.get_fixture_stat_df(table_id, fixture_url)
-        elif stat_type == "keeper":
+        fixture_object = self.instantiate_beautiful_soup_object(fixture_url)
+
+        fixture_stat_dict = {}
+
+        for stat in ["summary", "passing", "passing_types", "defense", "possession", "misc"]:
+            stat_df_list = []
+            for team_id in [home_id, away_id]:
+                table_id = f"stats_{team_id}_{stat}"
+                fixture_stat_df = self.get_fixture_stat_df(table_id, fixture_url, fixture_object)
+                stat_df_list.append(fixture_stat_df)
+            fixture_stat_dict[stat] = pd.concat(stat_df_list)
+
+        keeper_stats_list = []
+        shots_stats_list = []
+        for team_id in [home_id, away_id]:
             table_id = f"keeper_stats_{team_id}"
-            fixture_stat_df = self.get_fixture_stat_df(table_id, fixture_url)
-        elif stat_type == "shots":
+            keeper_stat_df = self.get_fixture_stat_df(table_id, fixture_url, fixture_object)
+
             table_id = f"shots_{team_id}"
-            fixture_stat_df = self.get_fixture_shots_df(table_id, fixture_url)
-        else:
-            raise Exception("stat_type input invalid.")
+            shots_stat_df = self.get_fixture_shots_df(table_id, fixture_url)
 
-        return fixture_stat_df
+            keeper_stats_list.append(keeper_stat_df)
+            shots_stats_list.append(shots_stat_df)
+        fixture_stat_dict["shots"] = pd.concat(shots_stats_list)
+        fixture_stat_dict["keeper"] = pd.concat(keeper_stats_list)
 
-    def get_fixture_stat_df(self, table_id, fixture_url):
+        return fixture_stat_dict
+
+    def get_fixture_stat_df(self, table_id, fixture_url, fixture_bs_object):
         """Function used to grab dataframe for stats from a given fixture url"""
-        fixture_stat_html = self.get_html_table(table_id, fixture_url)
+        fixture_stat_html = self.get_html_table(table_id, fixture_url, fixture_bs_object)
         fixture_stat_headers = self.get_column_names(fixture_stat_html)
         fixture_stat_headers += ["player_id", "player_link"]
 
