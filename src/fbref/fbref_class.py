@@ -279,7 +279,7 @@ class FBref:
             keeper_stat_df = self.get_fixture_stat_df(table_id, fixture_url, fixture_object)
 
             table_id = f"shots_{team_id}"
-            shots_stat_df = self.get_fixture_shots_df(table_id, fixture_url)
+            shots_stat_df = self.get_fixture_shots_df(table_id, fixture_url, fixture_object)
 
             keeper_stats_list.append(keeper_stat_df)
             shots_stats_list.append(shots_stat_df)
@@ -322,9 +322,9 @@ class FBref:
         fixture_stat_df = pd.DataFrame(data=fixture_stat_rows_list, columns=fixture_stat_headers)
         return fixture_stat_df
 
-    def get_fixture_shots_df(self, table_id, fixture_url):
+    def get_fixture_shots_df(self, table_id, fixture_url, fixture_bs_object):
         """Function used to grab dataframe for shots from a given fixture url"""
-        fixture_shots_html = self.get_html_table(table_id, fixture_url)
+        fixture_shots_html = self.get_html_table(table_id, fixture_url, fixture_bs_object)
         fixture_shots_headers = self.get_column_names(fixture_shots_html)
 
         fixture_shots_body = fixture_shots_html.find("tbody")
